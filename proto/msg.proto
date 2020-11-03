@@ -1,0 +1,31 @@
+syntax = "proto3";
+package im;
+
+//消息类别
+enum MsgType {
+    C2C = 0; //单聊
+    C2G = 1; //群聊
+    C2S = 2; //客户端上报
+    S2C = 3; //服务端下发消息
+    PUSH = 4; //推送
+    PULL = 5; //离线消息
+    LOGIN = 6; //登陆
+    LOGOUT = 7; //退出
+    KICKOUT = 8; //踢出
+    RECONNECTION=9;//重连
+}
+message Msg {
+    string msgId = 1; //消息唯一id
+    int32 seq = 2; //消息的顺序
+    MsgType type = 3; //消息类型
+    bytes content = 4; //消息内容
+}
+
+message MsgAck {
+    string msgId = 1;
+}
+
+message LoginContent{
+    string name=1;
+    string password=2;
+}
