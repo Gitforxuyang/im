@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"im/proto"
 	"im/utils"
@@ -18,7 +19,7 @@ const (
 func Run() {
 	addr, err := net.ResolveTCPAddr(TYPE, ADDR)
 	utils.Must(err)
-	l,err:=net.ListenTCP("tcp",addr)
+	l, err := net.ListenTCP("tcp", addr)
 	defer l.Close()
 	for {
 		conn, err := l.AcceptTCP()
@@ -31,35 +32,39 @@ func Run() {
 }
 
 func handleReq(conn *net.TCPConn) {
-	//buf := make([]byte, 1024)
-	reader:=bufio.NewReader(conn)
+	conn.SetReadBuffer(8192)
+	reader := bufio.NewReader(conn)
+	//for {
+	//	buf := make([]byte, 1024)
+	//	fmt.Println(reader.Buffered())
+	//	reader.Read(buf)
+	//
+	//}
 	var length int32
 	for {
-		peek,err:=reader.Peek(4)
+		peek, err := reader.Peek(4)
 		utils.Must(err)
-		lenBuf:=bytes.NewBuffer(peek)
-		err=binary.Read(lenBuf,binary.BigEndian,&length)
+		fmt.Println(string(peek))
+		lenBuf := bytes.NewBuffer(peek)
+		err = binary.Read(lenBuf, binary.BigEndian, &length)
 		utils.Must(err)
-		if int32(reader.Buffered())<length+4{
-			continue
-		}
-		buf:=make([]byte,length+4)
-		_, err = reader.Read(buf)
-		//fmt.Println(len)
-		//fmt.Println(buf[0:len])
-		//fmt.Printf("req len:%d data:%s", len, string(buf))
+		buf := make([]byte, length+4)
+		err=binary.Read(reader,binary.BigEndian,buf)
+
 		utils.Must(err)
-		msg:=im.Msg{}
-		err=proto.Unmarshal(buf[4:],&msg)
+		msg := im.Msg{}
+		err = proto.Unmarshal(buf[4:], &msg)
 		utils.Must(err)
 		utils.PrintStrcut(msg)
 		//回复ACK
-		msgAck:=im.MsgAck{MsgId:msg.MsgId}
-		res,err:=proto.Marshal(&msgAck)
+		msgAck := im.MsgAck{MsgId: msg.MsgId}
+		res, err := proto.Marshal(&msgAck)
 		utils.Must(err)
-		writeBuffer,err:=utils.Encode(res)
+		writeBuffer, err := utils.Encode(res)
 		utils.Must(err)
-		conn.Write(writeBuffer)
+		err=binary.Write(conn,binary.BigEndian,writeBuffer)
+		utils.Must(err)
+		//conn.Write(writeBuffer)
 	}
 	//conn.Close()
 }

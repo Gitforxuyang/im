@@ -22,12 +22,13 @@ func client() {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	utils.Must(err)
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
+	conn.SetWriteBuffer(1024)
 	utils.Must(err)
 	var seq int32 = 1
 	for {
-		time.Sleep(time.Second * time.Duration(rand.Intn(20)))
+		time.Sleep(time.Millisecond * time.Duration(rand.Intn(50)))
 		msg := im.Msg{}
-		msg.MsgId = strconv.Itoa(int(time.Now().Unix()))
+		msg.MsgId = strconv.Itoa(int(time.Now().UnixNano()))
 		msg.Type = im.MsgType_LOGIN
 		seq++
 		msg.Seq = seq
@@ -36,7 +37,8 @@ func client() {
 		utils.Must(err)
 		buf,err=utils.Encode(buf)
 		utils.Must(err)
-		_,err=conn.Write(buf)
+		//_,err=conn.Write(buf)
+		err=binary.Write(conn,binary.BigEndian,buf)
 		utils.Must(err)
 		reader:=bufio.NewReader(conn)
 
@@ -47,13 +49,14 @@ func client() {
 		err=binary.Read(lenBuf,binary.BigEndian,&length)
 		utils.Must(err)
 		res:=make([]byte,length+4)
-		_, err = reader.Read(res)
+		err = binary.Read(reader,binary.BigEndian,res)
+		utils.Must(err)
 
 		msgAck:=im.MsgAck{}
 		err=proto.Unmarshal(res[4:],&msgAck)
 		utils.Must(err)
 		utils.PrintStrcut(msgAck)
-		time.Sleep(time.Second*1000)
+		//time.Sleep(time.Second*1000)
 		//return
 	}
 }
