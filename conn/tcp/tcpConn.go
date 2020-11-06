@@ -2,32 +2,111 @@ package tcp
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/binary"
 	"im/conn"
+	"im/proto/protocol"
 	"net"
 )
+
 const (
-	READ_BUFFER_SIZE=8192 //读取缓冲区大小
-	WRITE_BUFFER_SIZE=1024	//写入缓冲区大小
-	MSG_MAX_SIZE=10240 //最大消息大小，防止被人攻击
+	READ_BUFFER_SIZE  = 8192  //读取缓冲区大小
+	WRITE_BUFFER_SIZE = 1024  //写入缓冲区大小
+	MSG_MAX_SIZE      = 10240 //最大消息大小，防止被人攻击
 )
+
 type tcpConn struct {
-	//conn *net.TCPConn
-	reader *bufio.Reader
-	writer *bufio.Writer
+	conn       *net.TCPConn
+	reader     *bufio.Reader
+	writer     *bufio.Writer
+	remoteAddr string
+	//最新更新时间
+	pingedAt int64
+	login    bool //是否已登陆
+	uid      int64
 }
 
-func (m *tcpConn) Read() (conn.Msg,error) {
-	panic("implement me")
+func (m *tcpConn) SetUid(uid int64) {
+	m.uid = uid
 }
 
-func (m *tcpConn) Write(msg conn.Msg)error {
-	panic("implement me")
+func (m *tcpConn) GetUid() int64 {
+	return m.uid
 }
 
-func NewTCPConn(conn *net.TCPConn) conn.Conn{
+func (m *tcpConn) SetLogin(login bool) {
+	m.login = login
+}
+
+func (m *tcpConn) GetLogin() bool {
+	return m.login
+}
+
+func (m *tcpConn) Close() {
+	m.conn.Close()
+}
+
+func (m *tcpConn) GetPingedAt() int64 {
+	return m.pingedAt
+}
+
+func (m *tcpConn) SetPingedAt(time int64) {
+	m.pingedAt = time
+}
+
+func (m *tcpConn) RemoteAddr() string {
+	return m.remoteAddr
+}
+
+func (m *tcpConn) Read() (*protocol.NimProtocol, error) {
+	headerBuf := make([]byte, 4)
+	err := binary.Read(m.reader, binary.BigEndian, headerBuf)
+	if err != nil {
+		return nil, err
+	}
+	p := &protocol.NimProtocol{}
+	p.CmdId = protocol.CmdEnum(binary.BigEndian.Uint16(headerBuf[0:1]))
+	p.Version = uint8(binary.BigEndian.Uint16(headerBuf[1:2]))
+	p.BodyLen = binary.BigEndian.Uint16(headerBuf[2:4])
+
+	bodyBuf := make([]byte, p.BodyLen)
+	err = binary.Read(m.reader, binary.BigEndian, bodyBuf)
+	if err != nil {
+		return nil, err
+	}
+	p.Body = bodyBuf
+	return p, nil
+}
+
+func (m *tcpConn) Write(msg *protocol.NimProtocol) error {
+	var writeBuf = make([]byte, msg.BodyLen+4)
+	err := binary.Write(bytes.NewBuffer(writeBuf), binary.BigEndian, msg.CmdId)
+	if err != nil {
+		return err
+	}
+	err = binary.Write(bytes.NewBuffer(writeBuf), binary.BigEndian, msg.Version)
+	if err != nil {
+		return err
+	}
+	err = binary.Write(bytes.NewBuffer(writeBuf), binary.BigEndian, msg.BodyLen)
+	if err != nil {
+		return err
+	}
+	err = binary.Write(bytes.NewBuffer(writeBuf), binary.BigEndian, msg.Body)
+	if err != nil {
+		return err
+	}
+	err = binary.Write(m.writer, binary.BigEndian, writeBuf)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func NewTCPConn(conn *net.TCPConn) conn.Conn {
 	conn.SetReadBuffer(READ_BUFFER_SIZE)
 	conn.SetWriteBuffer(WRITE_BUFFER_SIZE)
-	reader:=bufio.NewReader(conn)
-	writer:=bufio.NewWriter(conn)
-	return &tcpConn{reader:reader,writer:writer}
+	reader := bufio.NewReader(conn)
+	writer := bufio.NewWriter(conn)
+	return &tcpConn{reader: reader, writer: writer, remoteAddr: conn.RemoteAddr().String(), conn: conn}
 }

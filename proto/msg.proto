@@ -54,7 +54,7 @@ message KickoutReq {
 }
 message PullMsgReq {
     string uid = 1;
-    int64 timestamp = 2; //当前客户端更新到的时间戳
+    int64 lastMsgId = 2; //当前客户端同步的最后一条消息
     int32 limit = 3; //条数限制
 }
 
@@ -72,6 +72,8 @@ message PullNotify {
     int64 timestamp = 3; //消息的时间戳
 }
 message PullMsgRes {
+    int32 code = 3;
+    string msg = 4;
     repeated PullMessageNotify message = 1; //聊天消息
     repeated PullNotify notifies = 2; //通知类消息
 }
