@@ -14,6 +14,10 @@ type Handler struct {
 	waitAuthSocket sync.Map
 	//已经验证完毕的连接
 	connectedSocket sync.Map
+	//重试队列
+	retryList *utils.RetryList
+	//msgId对应重试消息
+	msgIdMap sync.Map
 }
 
 //一个新的连接建立
