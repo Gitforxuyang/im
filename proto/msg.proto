@@ -1,31 +1,108 @@
 syntax = "proto3";
 package im;
 
-//消息类别
-enum MsgType {
-    C2C = 0; //单聊
-    C2G = 1; //群聊
-    C2S = 2; //客户端上报
-    S2C = 3; //服务端下发消息
-    PUSH = 4; //推送
-    PULL = 5; //离线消息
-    LOGIN = 6; //登陆
-    LOGOUT = 7; //退出
-    KICKOUT = 8; //踢出
-    RECONNECTION=9;//重连
+
+message MessageSendAck {
+    int64 tempId = 1; //客户端主动发送消息时的临时id
+    int64 msgId = 2; //后端生成的消息id
+    int64 timestamp = 3; //后端接收到消息的时间戳
 }
-message Msg {
-    string msgId = 1; //消息唯一id
-    int32 seq = 2; //消息的顺序
-    MsgType type = 3; //消息类型
-    bytes content = 4; //消息内容
+message MessageSend {
+    int64 tempId = 1; //临时id
+    string from = 2; //发送者
+    string to = 3; //接收者 如果type=1是单聊时，接收者是uid 如果是群聊或聊天室时 接收者是对应的id
+    string content = 4; //消息体
+    int32 type = 5; //1-单聊 2-群聊 3-聊天室
+}
+message MessageNotify {
+    int64 msgId = 1;
+    string from = 2; //发送者
+    string to = 3; //接收者 如果type=1是单聊时，接收者是uid 如果是群聊或聊天室时 接收者是对应的id
+    string content = 4; //消息体
+    int32 type = 5; //1-单聊 2-群聊 3-聊天室
+    int64 timestamp = 6; //消息的时间戳
+    int32 seq=7;
+//    int64 lastTimestamp = 7; //上一个消息的时间戳
+}
+//消息下发的ack
+message NotifyAck {
+    int64 msgId = 1;
+}
+//message SingleChat {
+//    int64 tempId = 1; //临时id
+//    string from = 2; //发送者
+//    string to = 3; //接收者
+//    string content = 4; //消息体
+//}
+//message ChatRoom {
+//    int64 tempId = 1;
+//    string from = 2;
+//    string chatId = 3; //聊天室id
+//    string content = 4;
+//}
+//message GroupChat {
+//    int64 tempId = 1;
+//    string from = 2;
+//    string groupId = 3;
+//    string content = 4;
+//}
+message AuthReq {
+    string token = 1;
+    string uid = 2;
+}
+message AuthRes {
+    int32 code = 1; //200-成功  500-失败
+    string msg = 2; //如果失败，提示失败原因
+    //    int64 timestamp = 3; //登陆时间
+}
+message LogoutReq {
+    string token = 1;
+    string uid = 2;
+}
+message LogoutRes {
+    int32 code = 1; //200-成功  500-失败
+    string msg = 2; //如果失败，提示失败原因
+}
+message KickoutReq {
+    string reason = 1; //踢出原因
+}
+message PullMsgReq {
+    string uid = 1;
+    int64 timestamp = 2; //当前客户端更新到的时间戳
+    int32 limit = 3; //条数限制
 }
 
-message MsgAck {
-    string msgId = 1;
+message MessageNotify {
+    int64 msgId = 1;
+    string from = 2; //发送者
+    string to = 3; //接收者 如果type=1是单聊时，接收者是uid 如果是群聊或聊天室时 接收者是对应的id
+    string content = 4; //消息体
+    int32 type = 5; //1-单聊 2-群聊 3-聊天室
+    int64 timestamp = 6; //消息的时间戳
 }
-
-message LoginContent{
-    string name=1;
-    string password=2;
+message PullMsgRes {
+    repeated MessageNotify message = 1; //聊天消息
+    //    repeated ChatRoom chatRoom = 2; //聊天室
+    //    repeated GroupChat groupChat = 3; //群聊
+    //    repeated PushMsgReq pushMsg = 4; //推送
+    repeated Notify notifies = 5; //通知类消息
+    int64 timestamp = 6; //最后一条消息的时间戳
 }
+//message PushMsgReq {
+//
+//}
+//message PushMsgRes {
+//
+//}
+message Notify {
+    int64 msgId = 1;
+    int32 type = 2; //通知类型  1-推送
+    int64 timestamp = 6; //消息的时间戳
+    int32 seq=7;
+//    int64 lastTimestamp = 7; //上一个消息的时间戳
+}
+//PullMsgReq CmdEnum = 13 //拉取消息
+//PullMsgRes CmdEnum = 14
+//PushMsgReq CmdEnum = 15 //推送消息
+//PushMsgRes CmdEnum = 16
+//Notify     CmdEnum = 17 //通知类消息 下发通知、派对被关闭、帖子被删等消息
