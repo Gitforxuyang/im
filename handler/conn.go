@@ -101,6 +101,9 @@ func (m *Handler) authReq(conn conn.Conn, packet *protocol.NimProtocol) (*protoc
 		return protocol.MakeAuthRes(&res), nil
 	}
 	conn.SetLogin(true)
+	//登陆成功后，将连接转移到已连接队列
+	m.waitAuthSocket.Delete(conn.RemoteAddr())
+	m.connectedSocket.Store(authReq.Uid, conn)
 	//做token跟uid的验证操作，如果验证成功，则将连接设置为已验证的连接，如果验证失败，则返回报错
 	return protocol.MakeAuthRes(&res), nil
 }
