@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"github.com/emirpasic/gods/maps/treemap"
 	"im/proto/protocol"
+	"im/utils/skiplist"
 	"sync"
 )
 
@@ -15,11 +15,12 @@ type WaitAckMsg struct {
 
 type RetryList struct {
 	sync.RWMutex
-	treeMap *treemap.Map
+	skipList *skiplist.SkipList
 }
 
 func NewRetryList() *RetryList {
 	retryList := RetryList{}
-	retryList.treeMap = treemap.NewWithIntComparator()
+	list := skiplist.New()
+	retryList.skipList = &list
 	return &retryList
 }
