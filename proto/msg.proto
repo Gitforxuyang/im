@@ -13,6 +13,8 @@ message MessageSendAck {
     int64 tempId = 1; //客户端主动发送消息时的临时id
     int64 msgId = 2; //后端生成的消息id
     int64 timestamp = 3; //后端接收到消息的时间戳
+    int32 code = 4; //通知的消息码
+    string msg = 5; //消息
 }
 message MessageNotify {
     int64 msgId = 1;
@@ -32,6 +34,8 @@ message Notify {
 //消息下发的ack
 message NotifyAck {
     int64 msgId = 1;
+//    int32 code = 2; //通知的消息码
+//    string msg = 3; //消息
 }
 message AuthReq {
     string token = 1;

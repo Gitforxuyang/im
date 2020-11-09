@@ -68,7 +68,7 @@ func MakeKickoutReq(msg *im.KickoutReq) *NimProtocol {
 	return &protocol
 }
 
-func MakeMessageSendAckReq(msg *im.MessageSendAck) *NimProtocol {
+func MakeMessageSendAck(msg *im.MessageSendAck) *NimProtocol {
 	protocol := NimProtocol{}
 	protocol.CmdId = MessageSendAck
 	protocol.Version = 1
@@ -77,7 +77,8 @@ func MakeMessageSendAckReq(msg *im.MessageSendAck) *NimProtocol {
 	return &protocol
 }
 
-func MakeMessageNotifyReq(msg *im.MessageNotify) *NimProtocol {
+
+func MakeMessageNotify(msg *im.MessageNotify) *NimProtocol {
 	protocol := NimProtocol{}
 	protocol.CmdId = MessageNotify
 	protocol.Version = 1

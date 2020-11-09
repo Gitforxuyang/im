@@ -69,9 +69,17 @@ func (m *Handler) loop(conn conn.Conn) {
 		if res != nil {
 			err = conn.Write(res)
 			//回写消息出错，则加入重试列表
-			if err != nil {
-				fmt.Printf("write error: %s ", err)
-			}
+			//if err != nil {
+			//	fmt.Printf("write error: %s ", err)
+			//	switch msg.CmdId {
+			//	case protocol.AuthReq:
+			//		m.retryList.AddRetryMsg(&utils.WaitAckMsg{Msg: msg})
+			//	case protocol.LogoutReq:
+			//	case protocol.PullMsgReq:
+			//	default:
+			//
+			//	}
+			//}
 		}
 		conn.SetPingedAt(utils.NowMillisecond())
 	}
@@ -88,13 +96,7 @@ func (m *Handler) authReq(conn conn.Conn, packet *protocol.NimProtocol) (*protoc
 		res.Msg = "认证消息体解析异常"
 		return protocol.MakeAuthRes(&res), nil
 	}
-	authReq, ok := msg.(*im.AuthReq)
-	//如果消息强转失败，说明服务器有问题
-	if !ok {
-		res.Code = 500
-		res.Msg = "认证消息体解析异常"
-		return protocol.MakeAuthRes(&res), nil
-	}
+	authReq, _ := msg.(*im.AuthReq)
 	if authReq.Token == "" || authReq.Uid == "" {
 		res.Code = 500
 		res.Msg = "缺少参数"
@@ -115,13 +117,8 @@ func (m *Handler) logoutReq(conn conn.Conn, packet *protocol.NimProtocol) (*prot
 		res.Msg = "认证消息体解析异常"
 		return protocol.MakeLogoutRes(&res), nil
 	}
-	logoutReq, ok := msg.(*im.LogoutReq)
+	logoutReq, _ := msg.(*im.LogoutReq)
 	//如果消息强转失败，说明服务器有问题
-	if !ok {
-		res.Code = 500
-		res.Msg = "认证消息体解析异常"
-		return protocol.MakeLogoutRes(&res), nil
-	}
 	if logoutReq.Token == "" || logoutReq.Uid == "" {
 		res.Code = 500
 		res.Msg = "缺少参数"
@@ -140,13 +137,8 @@ func (m *Handler) pullMsgReq(conn conn.Conn, packet *protocol.NimProtocol) (*pro
 		res.Msg = "认证消息体解析异常"
 		return protocol.MakePullMessageRes(&res), nil
 	}
-	pullMsgReq, ok := msg.(*im.PullMsgReq)
-	//如果消息强转失败，说明服务器有问题
-	if !ok {
-		res.Code = 500
-		res.Msg = "认证消息体解析异常"
-		return protocol.MakePullMessageRes(&res), nil
-	}
+	pullMsgReq, _ := msg.(*im.PullMsgReq)
+
 	if pullMsgReq.Uid == "" || pullMsgReq.Limit == 0 {
 		res.Code = 500
 		res.Msg = "缺少参数"
@@ -154,10 +146,34 @@ func (m *Handler) pullMsgReq(conn conn.Conn, packet *protocol.NimProtocol) (*pro
 	}
 	return nil, nil
 }
-func (m *Handler) messageSend(conn conn.Conn, packet *protocol.NimProtocol) (*protocol.NimProtocol, error) {
+func (m *Handler) messageSend(conn conn.Conn, packet *protocol.NimProtocol) (ack *protocol.NimProtocol, err error) {
+	msg, err := protocol.Unmarshal(packet)
+	res := im.MessageSendAck{}
+	if err != nil {
+		res.Code = 500
+		res.Msg = "认证消息体解析异常"
+		return protocol.MakeMessageSendAck(&res), nil
+	}
+	sendMsg, _ := msg.(*im.MessageSend)
+
+	if sendMsg.From == "" || sendMsg.To == "" || sendMsg.TempId == 0 || sendMsg.Type == 0 || sendMsg.Content == "" {
+		res.Code = 500
+		res.Msg = "缺少参数"
+		return protocol.MakeMessageSendAck(&res), nil
+	}
+	//发送到业务后端，消息即发送完成
 	return nil, nil
 }
 func (m *Handler) notifyAck(conn conn.Conn, packet *protocol.NimProtocol) (*protocol.NimProtocol, error) {
+	msg, err := protocol.Unmarshal(packet)
+	if err != nil {
+		return nil, nil
+	}
+	notifyAck, _ := msg.(*im.NotifyAck)
+	if notifyAck.MsgId == 0 {
+		return nil, nil
+	}
+	//从重试队列里删除消息
 	return nil, nil
 }
 func NewHandler() *Handler {
