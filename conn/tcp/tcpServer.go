@@ -19,12 +19,14 @@ func (m *tcpServer) Run() error {
 	l, err := net.ListenTCP("tcp", addr)
 	utils.Must(err)
 	defer l.Close()
+	fmt.Printf("tcp server run port:%d  \n", m.port)
 	for {
 		tcpConn, err := l.AcceptTCP()
 		if err != nil {
 			fmt.Println("server accept error", err)
 			tcpConn.Close()
 		} else {
+			fmt.Printf("client connected to server info:%s  \n", tcpConn.RemoteAddr())
 			conn := NewTCPConn(tcpConn)
 			go m.handler.Open(conn)
 		}

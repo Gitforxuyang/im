@@ -68,18 +68,17 @@ func (m *Handler) loop(conn conn.Conn) {
 		}
 		if res != nil {
 			err = conn.Write(res)
-			//回写消息出错，则加入重试列表
-			//if err != nil {
-			//	fmt.Printf("write error: %s ", err)
-			//	switch msg.CmdId {
-			//	case protocol.AuthReq:
-			//		m.retryList.AddRetryMsg(&utils.WaitAckMsg{Msg: msg})
-			//	case protocol.LogoutReq:
-			//	case protocol.PullMsgReq:
-			//	default:
-			//
-			//	}
-			//}
+			if err != nil {
+				fmt.Printf("write error: %s ", err)
+				//switch msg.CmdId {
+				//case protocol.AuthReq:
+				//	m.retryList.AddRetryMsg(&utils.WaitAckMsg{Msg: msg})
+				//case protocol.LogoutReq:
+				//case protocol.PullMsgReq:
+				//default:
+				//
+				//}
+			}
 		}
 		conn.SetPingedAt(utils.NowMillisecond())
 	}

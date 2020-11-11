@@ -1,7 +1,13 @@
 package main
 
-import "im/server"
+import (
+	"im/conn/tcp"
+	handler2 "im/handler"
+)
 
-func main(){
+func main() {
+	//server.Run()
+	handler := handler2.NewHandler()
+	server := tcp.NewTcpServer(8000, handler)
 	server.Run()
 }

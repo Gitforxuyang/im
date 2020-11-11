@@ -65,8 +65,8 @@ func (m *tcpConn) Read() (*protocol.NimProtocol, error) {
 		return nil, err
 	}
 	p := &protocol.NimProtocol{}
-	p.CmdId = protocol.CmdEnum(binary.BigEndian.Uint16(headerBuf[0:1]))
-	p.Version = uint8(binary.BigEndian.Uint16(headerBuf[1:2]))
+	p.CmdId = protocol.CmdEnum(uint8(headerBuf[0]))
+	p.Version = uint8(headerBuf[1])
 	p.BodyLen = binary.BigEndian.Uint16(headerBuf[2:4])
 
 	bodyBuf := make([]byte, p.BodyLen)
@@ -79,24 +79,26 @@ func (m *tcpConn) Read() (*protocol.NimProtocol, error) {
 }
 
 func (m *tcpConn) Write(msg *protocol.NimProtocol) error {
-	var writeBuf = make([]byte, msg.BodyLen+4)
-	err := binary.Write(bytes.NewBuffer(writeBuf), binary.BigEndian, msg.CmdId)
+	var writeBuf = new(bytes.Buffer)
+	err := binary.Write(writeBuf, binary.BigEndian, msg.CmdId)
 	if err != nil {
 		return err
 	}
-	err = binary.Write(bytes.NewBuffer(writeBuf), binary.BigEndian, msg.Version)
+	err = binary.Write(writeBuf, binary.BigEndian, msg.Version)
 	if err != nil {
 		return err
 	}
-	err = binary.Write(bytes.NewBuffer(writeBuf), binary.BigEndian, msg.BodyLen)
+	err = binary.Write(writeBuf, binary.BigEndian, msg.BodyLen)
 	if err != nil {
 		return err
 	}
-	err = binary.Write(bytes.NewBuffer(writeBuf), binary.BigEndian, msg.Body)
+	err = binary.Write(writeBuf, binary.BigEndian, msg.Body)
 	if err != nil {
 		return err
 	}
-	err = binary.Write(m.writer, binary.BigEndian, writeBuf)
+	_, err = m.writer.Write(writeBuf.Bytes())
+	m.writer.Flush()
+	//err = binary.Write(m.writer, binary.BigEndian, writeBuf)
 	if err != nil {
 		return err
 	}
