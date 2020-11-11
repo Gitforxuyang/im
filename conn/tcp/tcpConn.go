@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"im/conn"
 	"im/proto/protocol"
+	"io"
 	"net"
 )
 
@@ -67,6 +69,12 @@ func (m *tcpConn) Read() (*protocol.NimProtocol, error) {
 	headerBuf := make([]byte, 4)
 	err := binary.Read(m.reader, binary.BigEndian, headerBuf)
 	if err != nil {
+		if err == io.EOF {
+			return nil, errors.New("connection closed by client")
+		}
+		if err.Error() != "use of closed network connection" {
+			return nil, errors.New("connection closed by server")
+		}
 		return nil, err
 	}
 	p := &protocol.NimProtocol{}
@@ -77,6 +85,9 @@ func (m *tcpConn) Read() (*protocol.NimProtocol, error) {
 		bodyBuf := make([]byte, p.BodyLen)
 		err = binary.Read(m.reader, binary.BigEndian, bodyBuf)
 		if err != nil {
+			if err.Error() != "use of closed network connection" {
+				return nil, errors.New("connection closed by server")
+			}
 			return nil, err
 		}
 		p.Body = bodyBuf
@@ -103,9 +114,17 @@ func (m *tcpConn) Write(msg *protocol.NimProtocol) error {
 		return err
 	}
 	_, err = m.writer.Write(writeBuf.Bytes())
-	m.writer.Flush()
-	//err = binary.Write(m.writer, binary.BigEndian, writeBuf)
 	if err != nil {
+		if err.Error() != "use of closed network connection" {
+			return errors.New("connection closed by server")
+		}
+		return err
+	}
+	m.writer.Flush()
+	if err != nil {
+		if err.Error() != "use of closed network connection" {
+			return errors.New("connection closed by server")
+		}
 		return err
 	}
 	return nil
