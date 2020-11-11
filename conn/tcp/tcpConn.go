@@ -26,6 +26,11 @@ type tcpConn struct {
 	uid      int64
 }
 
+//5分钟过期
+func (m *tcpConn) GetExpireAt() int64 {
+	return m.pingedAt + 300000
+}
+
 func (m *tcpConn) SetUid(uid int64) {
 	m.uid = uid
 }
@@ -68,13 +73,14 @@ func (m *tcpConn) Read() (*protocol.NimProtocol, error) {
 	p.CmdId = protocol.CmdEnum(uint8(headerBuf[0]))
 	p.Version = uint8(headerBuf[1])
 	p.BodyLen = binary.BigEndian.Uint16(headerBuf[2:4])
-
-	bodyBuf := make([]byte, p.BodyLen)
-	err = binary.Read(m.reader, binary.BigEndian, bodyBuf)
-	if err != nil {
-		return nil, err
+	if p.BodyLen != 0 {
+		bodyBuf := make([]byte, p.BodyLen)
+		err = binary.Read(m.reader, binary.BigEndian, bodyBuf)
+		if err != nil {
+			return nil, err
+		}
+		p.Body = bodyBuf
 	}
-	p.Body = bodyBuf
 	return p, nil
 }
 

@@ -17,4 +17,6 @@ type Conn interface {
 	GetLogin() bool
 	SetUid(uid int64)
 	GetUid() int64
+	//获取连接的过期时间
+	GetExpireAt() int64
 }

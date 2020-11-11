@@ -7,6 +7,7 @@ import (
 	"im/proto/protocol"
 	"im/utils"
 	"sync"
+	"time"
 )
 
 type Handler struct {
@@ -177,5 +178,43 @@ func (m *Handler) notifyAck(conn conn.Conn, packet *protocol.NimProtocol) (*prot
 }
 func NewHandler() *Handler {
 	handler := &Handler{}
+	go handler.loopCheckConnection()
 	return handler
+}
+
+//循环检查连接，如果发现连接长时间没有活跃，则关闭
+func (m *Handler) loopCheckConnection() {
+	num := 0
+	for {
+		//每隔60秒跑一次循环，每次循环中每毫秒检查一个连接，如果以10W个连接算，循环一次检查要100s
+		time.Sleep(time.Second * 60)
+		m.connectedSocket.Range(func(key, value interface{}) bool {
+			socket, _ := value.(conn.Conn)
+			//如果此连接的最后一次心跳在5分钟前，则关闭连接
+			if socket.GetExpireAt() < utils.NowMillisecond() {
+				socket.Close()
+				m.connectedSocket.Delete(key)
+			}
+			num++
+			if num > 50 {
+				time.Sleep(time.Millisecond * 50)
+				num = 0
+			}
+			return true
+		})
+		m.waitAuthSocket.Range(func(key, value interface{}) bool {
+			socket, _ := value.(conn.Conn)
+			//如果此连接的最后一次心跳在5分钟前，则关闭连接
+			if socket.GetExpireAt() < utils.NowMillisecond() {
+				socket.Close()
+				m.waitAuthSocket.Delete(key)
+			}
+			num++
+			if num > 50 {
+				time.Sleep(time.Millisecond * 50)
+				num = 0
+			}
+			return true
+		})
+	}
 }
