@@ -68,6 +68,7 @@ func (m *Handler) loop(conn conn.Conn) {
 			return
 		}
 		if res != nil {
+			fmt.Println(res)
 			err = conn.Write(res)
 			if err != nil {
 				fmt.Printf("write error: %s ", err)
@@ -90,7 +91,7 @@ func (m *Handler) ping(conn conn.Conn) (*protocol.NimProtocol, error) {
 }
 func (m *Handler) authReq(conn conn.Conn, packet *protocol.NimProtocol) (*protocol.NimProtocol, error) {
 	msg, err := protocol.Unmarshal(packet)
-	res := im.AuthRes{}
+	res := im.AuthRes{Code: 200, Msg: "验证成功"}
 	if err != nil {
 		res.Code = 500
 		res.Msg = "认证消息体解析异常"

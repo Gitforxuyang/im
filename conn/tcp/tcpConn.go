@@ -70,10 +70,10 @@ func (m *tcpConn) Read() (*protocol.NimProtocol, error) {
 	err := binary.Read(m.reader, binary.BigEndian, headerBuf)
 	if err != nil {
 		if err == io.EOF {
-			return nil, errors.New("connection closed by client")
+			return nil, errors.New("connection closed")
 		}
 		if err.Error() != "use of closed network connection" {
-			return nil, errors.New("connection closed by server")
+			return nil, errors.New("connection closed")
 		}
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (m *tcpConn) Read() (*protocol.NimProtocol, error) {
 		err = binary.Read(m.reader, binary.BigEndian, bodyBuf)
 		if err != nil {
 			if err.Error() != "use of closed network connection" {
-				return nil, errors.New("connection closed by server")
+				return nil, errors.New("connection closed")
 			}
 			return nil, err
 		}
