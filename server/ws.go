@@ -32,6 +32,7 @@ func echo(w http.ResponseWriter, r *http.Request) {
 		utils.Must(err)
 		fmt.Println(msgType)
 		fmt.Println(len(data))
+		fmt.Println(data)
 		fmt.Printf("data:%s \n", string(data))
 		msg := protocol.NimProtocol{}
 		var writeBuf = new(bytes.Buffer)

@@ -45,7 +45,12 @@
                     return false;
                 }
                 print("SEND: " + input.value);
-                const blob = new Blob([51]);
+                const buf=new ArrayBuffer(3)
+                const dataView=new DataView(buf)
+                dataView.setInt8(0,51)
+                dataView.setInt8(1,52)
+                dataView.setInt8(2,53)
+                const blob = new Blob([buf]);
                 ws.send(blob);
                 return false;
             };
